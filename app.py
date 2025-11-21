@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi import Depends, FastAPI, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
@@ -37,10 +37,8 @@ class Customer(CustomerCreate):
 
 @app.post("/customers", response_model=Customer, status_code=status.HTTP_201_CREATED)
 def create_customer(payload: CustomerCreate, db: Session = Depends(get_db)) -> Customer:
-    db_customer = db.query(models.Customer).filter(models.Customer.email == payload.email).first()
-    if db_customer:
-        raise HTTPException(status_code=400, detail="Email already registered")
-        
+    _ensure_unique_customer_email(db, payload.email)
+
     new_customer = models.Customer(**payload.dict())
     db.add(new_customer)
     db.commit()
@@ -55,19 +53,17 @@ def list_customers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db
 
 @app.get("/customers/{customer_id}", response_model=Customer)
 def get_customer(customer_id: int, db: Session = Depends(get_db)) -> Customer:
-    customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
-    if not customer:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
-    return customer
+    return _get_customer_or_404(db, customer_id)
 
 
 @app.put("/customers/{customer_id}", response_model=Customer)
 def update_customer(customer_id: int, payload: CustomerUpdate, db: Session = Depends(get_db)) -> Customer:
-    customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
-    if not customer:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
+    customer = _get_customer_or_404(db, customer_id)
 
     update_data = payload.dict(exclude_unset=True)
+    if "email" in update_data:
+        _ensure_unique_customer_email(db, update_data["email"], customer_id)
+
     for key, value in update_data.items():
         setattr(customer, key, value)
         
@@ -78,11 +74,7 @@ def update_customer(customer_id: int, payload: CustomerUpdate, db: Session = Dep
 
 @app.delete("/customers/{customer_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_customer(customer_id: int, db: Session = Depends(get_db)) -> None:
-    customer = db.query(models.Customer).filter(models.Customer.id == customer_id).first()
-    if not customer:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
-    
-    db.delete(customer)
+    db.delete(_get_customer_or_404(db, customer_id))
     db.commit()
     return None
 
@@ -90,3 +82,21 @@ def delete_customer(customer_id: int, db: Session = Depends(get_db)) -> None:
 @app.get("/")
 def healthcheck() -> dict:
     return {"status": "ok"}
+
+def _get_customer_or_404(db: Session, customer_id: int) -> models.Customer:
+    """Return a customer or raise a 404 if it does not exist."""
+
+    customer = db.get(models.Customer, customer_id)
+    if not customer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
+    return customer
+
+def _ensure_unique_customer_email(db: Session, email: str, customer_id: Optional[int] = None) -> None:
+    """Ensure a customer email is unique, excluding the given customer id if provided."""
+
+    query = db.query(models.Customer).filter(models.Customer.email == email)
+    if customer_id is not None:
+        query = query.filter(models.Customer.id != customer_id)
+    existing_customer = query.first()
+    if existing_customer:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
