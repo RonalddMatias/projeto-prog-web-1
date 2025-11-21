@@ -1,0 +1,182 @@
+:root {
+    --bg-color: #050510;
+    --card-bg: rgba(20, 20, 35, 0.6);
+    --primary-neon: #0ff;
+    --secondary-neon: #f0f;
+    --text-color: #e0e0e0;
+    --font-main: 'Roboto', sans-serif;
+    --font-display: 'Orbitron', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    min-height: 100vh;
+    background-image: 
+        linear-gradient(rgba(5, 5, 16, 0.9), rgba(5, 5, 16, 0.9)),
+        url('https://images.unsplash.com/photo-1535868463750-c78d9543614f?q=80&w=2076&auto=format&fit=crop');
+    background-size: cover;
+    background-attachment: fixed;
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+h1 {
+    font-family: var(--font-display);
+    font-size: 3.5rem;
+    letter-spacing: 4px;
+    color: #fff;
+    text-shadow: 0 0 10px var(--primary-neon), 0 0 20px var(--primary-neon);
+}
+
+.neon-text {
+    color: var(--primary-neon);
+}
+
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.05);
+}
+
+h2 {
+    font-family: var(--font-display);
+    color: var(--secondary-neon);
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 0, 255, 0.3);
+    padding-bottom: 0.5rem;
+    display: inline-block;
+}
+
+/* Form Styles */
+.form-section {
+    max-width: 600px;
+    margin: 0 auto 3rem;
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--primary-neon);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--primary-neon);
+    color: #fff;
+    border-radius: 5px;
+    font-family: var(--font-main);
+    transition: all 0.3s ease;
+}
+
+input:focus {
+    outline: none;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+    background: rgba(0, 255, 255, 0.05);
+}
+
+.cyber-btn {
+    width: 100%;
+    padding: 15px;
+    background: transparent;
+    border: 2px solid var(--primary-neon);
+    color: var(--primary-neon);
+    font-family: var(--font-display);
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.cyber-btn:hover {
+    background: var(--primary-neon);
+    color: #000;
+    box-shadow: 0 0 20px var(--primary-neon);
+}
+
+/* Grid Styles */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.user-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 3px solid var(--secondary-neon);
+    padding: 1.5rem;
+    border-radius: 0 10px 10px 0;
+    transition: transform 0.3s ease;
+    position: relative;
+}
+
+.user-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.user-card h3 {
+    color: #fff;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.user-card p {
+    color: #aaa;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+}
+
+.user-card .delete-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: 1px solid #ff4444;
+    color: #ff4444;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s;
+}
+
+.user-card .delete-btn:hover {
+    background: #ff4444;
+    color: #fff;
+    box-shadow: 0 0 10px #ff4444;
+}

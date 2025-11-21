@@ -1,13 +1,14 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from database import get_db
 from models import User as UserModel
+from utils.utils import ensure_unique, get_or_404
 
-router = APIRouter()
+router = APIRouter() # Uma formar de export as rotas deste arquivo para o arquivo app.py
 
 
 class UserCreate(BaseModel):
@@ -31,7 +32,8 @@ class User(UserCreate):
 
 @router.post("/users", response_model=User, status_code=status.HTTP_201_CREATED)
 def create_user(payload: UserCreate, db: Session = Depends(get_db)) -> User:
-    _ensure_unique_user(db, email=payload.email, username=payload.username)
+    ensure_unique(db, UserModel, UserModel.email, payload.email, detail="Email already registered")
+    ensure_unique(db, UserModel, UserModel.username, payload.username, detail="Username already registered")
 
     new_user = UserModel(**payload.dict())
     db.add(new_user)
@@ -51,20 +53,34 @@ def list_users(
 
 @router.get("/users/{user_id}", response_model=User)
 def get_user(user_id: int, db: Session = Depends(get_db)) -> User:
-    return _get_user_or_404(db, user_id)
+    return get_or_404(db, UserModel, user_id, detail="User not found")
 
 
 @router.put("/users/{user_id}", response_model=User)
 def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)) -> User:
-    user = _get_user_or_404(db, user_id)
+    user = get_or_404(db, UserModel, user_id, detail="User not found")
 
     update_data = payload.dict(exclude_unset=True)
-    _ensure_unique_user(
-        db,
-        email=update_data.get("email"),
-        username=update_data.get("username"),
-        current_user_id=user_id,
-    )
+    
+    if "email" in update_data:
+        ensure_unique(
+            db,
+            UserModel,
+            UserModel.email,
+            update_data["email"],
+            exclude_id=user_id,
+            detail="Email already registered",
+        )
+    
+    if "username" in update_data:
+        ensure_unique(
+            db,
+            UserModel,
+            UserModel.username,
+            update_data["username"],
+            exclude_id=user_id,
+            detail="Username already registered",
+        )
 
     for key, value in update_data.items():
         setattr(user, key, value)
@@ -76,39 +92,7 @@ def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: int, db: Session = Depends(get_db)) -> None:
-    db.delete(_get_user_or_404(db, user_id))
+    user = get_or_404(db, UserModel, user_id, detail="User not found")
+    db.delete(user)
     db.commit()
     return None
-
-
-def _get_user_or_404(db: Session, user_id: int) -> UserModel:
-    """Return a user by id or raise a 404 if not found."""
-
-    user = db.get(UserModel, user_id)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return user
-
-
-def _ensure_unique_user(
-    db: Session,
-    *,
-    email: Optional[str] = None,
-    username: Optional[str] = None,
-    current_user_id: Optional[int] = None,
-) -> None:
-    """Ensure user email and username are unique, ignoring the current user when provided."""
-
-    if email:
-        query = db.query(UserModel).filter(UserModel.email == email)
-        if current_user_id is not None:
-            query = query.filter(UserModel.id != current_user_id)
-        if query.first():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
-
-    if username:
-        query = db.query(UserModel).filter(UserModel.username == username)
-        if current_user_id is not None:
-            query = query.filter(UserModel.id != current_user_id)
-        if query.first():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already registered")
