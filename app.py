@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Query, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
@@ -47,7 +47,11 @@ def create_customer(payload: CustomerCreate, db: Session = Depends(get_db)) -> C
 
 
 @app.get("/customers", response_model=List[Customer])
-def list_customers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)) -> List[Customer]:
+def list_customers(
+    skip: int = Query(0, ge=0, description="Number of records to skip for pagination"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum number of records to return"),
+    db: Session = Depends(get_db),
+) -> List[Customer]:
     return db.query(models.Customer).offset(skip).limit(limit).all()
 
 
